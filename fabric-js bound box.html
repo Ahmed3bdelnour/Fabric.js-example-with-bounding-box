@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
+    <meta charset="utf-8" />
+    <title>Fabric.js Example with Bounding Box</title>
+    <style>
+      canvas {
+        border: 1px solid #ccc;
+      }
+
+      .canvas-container {
+        top: 150px;
+        left: 150px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+
+    <script>
+      const canvas = new fabric.Canvas("canvas", { selection: false });
+
+      const rect = new fabric.Rect({
+        left: 100,
+        top: 100,
+        width: 50,
+        height: 50,
+        fill: "red",
+        selectable: true,
+        hasControls: true,
+        originX: "center",
+        originY: "center",
+        centeredRotation: true,
+      });
+
+      canvas.add(rect);
+
+      const getClientRect = (rotatedBox) => {
+        const { left, top } = rotatedBox;
+        const width = rotatedBox.getScaledWidth();
+        const height = rotatedBox.getScaledHeight();
+        const rad = (rotatedBox.angle * Math.PI) / 180;
+
+        const cos = Math.abs(Math.cos(rad));
+        const sin = Math.abs(Math.sin(rad));
+
+        const newWidth = width * cos + height * sin;
+        const newHeight = width * sin + height * cos;
+
+        return {
+          left: left - newWidth / 2,
+          top: top - newHeight / 2,
+          width: newWidth,
+          height: newHeight,
+        };
+      };
+
+      const boundBoxToCanvas = (event) => {
+        const target = event.target;
+        const box = getClientRect(target);
+
+        if (
+          box.left < 0 ||
+          box.top < 0 ||
+          box.left + box.width > canvas.getWidth() ||
+          box.top + box.height > canvas.getHeight()
+        ) {
+          target.set("top", target.lastTop || 0);
+          target.set("left", target.lastLeft || 0);
+          target.set("scaleX", target.lastScaleX || 1);
+          target.set("scaleY", target.lastScaleY || 1);
+          target.set("angle", target.lastAngle || 0);
+
+          target.setCoords();
+        } else {
+          target.lastTop = target.top;
+          target.lastLeft = target.left;
+          target.lastScaleX = target.scaleX;
+          target.lastScaleY = target.scaleY;
+          target.lastAngle = target.angle;
+        }
+      };
+
+      canvas.on("object:moving", boundBoxToCanvas);
+      canvas.on("object:scaling", boundBoxToCanvas);
+      canvas.on("object:rotating", boundBoxToCanvas);
+    </script>
+  </body>
+</html>
